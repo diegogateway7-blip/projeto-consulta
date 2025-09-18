@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta CPF - API</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .loading.show {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 12px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result.success {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            border-left: 5px solid #00c9ff;
+        }
+
+        .result.error {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border-left: 5px solid #ff4757;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .data-grid {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .data-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+        }
+
+        .data-item h4 {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .data-item p {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-regular {
+            background: rgba(46, 204, 113, 0.2);
+            color: #27ae60;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .status-irregular {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .score-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4757, #ffa502, #2ed573);
+            border-radius: 5px;
+            transition: width 1s ease;
+        }
+
+        .api-info {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .api-info h3 {
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .api-info p {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .api-endpoint {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #495057;
+            margin: 10px 0;
+            word-break: break-all;
+            border-left: 4px solid #667eea;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .form-group input, .btn {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-search"></i> Consulta CPF</h1>
+            <p>Faça consultas reais usando a API searchapi.dnnl.live</p>
+        </div>
+
+        <form id="consultaForm">
+            <div class="form-group">
+                <label for="cpf">
+                    <i class="fas fa-id-card"></i> CPF
+                </label>
+                <div class="input-wrapper">
+                    <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" maxlength="14" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn">
+                <i class="fas fa-search"></i>
+                <i class="fas fa-spinner loading"></i>
+                <span class="btn-text">Consultar</span>
+            </button>
+        </form>
+
+        <div id="result" class="result"></div>
+
+        <div class="api-info">
+            <h3><i class="fas fa-code"></i> Endpoint da API</h3>
+            <p>Use este endpoint para integrar com sua aplicação:</p>
+            <div class="api-endpoint" id="apiEndpoint">
+                GET /api/consulta?cpf=12345678901
+            </div>
+            <p><strong>API Externa:</strong> searchapi.dnnl.live (token: 1528)</p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('consultaForm');
+        const cpfInput = document.getElementById('cpf');
+        const result = document.getElementById('result');
+        const loading = document.querySelector('.loading');
+        const btnText = document.querySelector('.btn-text');
+        const submitBtn = document.querySelector('.btn');
+
+        // Máscara para CPF
+        cpfInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            e.target.value = value;
+        });
+
+        // Atualizar endpoint na exibição
+        function updateApiEndpoint() {
+            const cpf = cpfInput.value.replace(/\D/g, '');
+            const endpoint = `GET ${window.location.origin}/api/consulta?cpf=${cpf || 'SEU_CPF'}`;
+            document.getElementById('apiEndpoint').textContent = endpoint;
+        }
+
+        cpfInput.addEventListener('input', updateApiEndpoint);
+
+        // Submit do formulário
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const cpf = cpfInput.value.replace(/\D/g, '');
+
+            // Validação básica
+            if (cpf.length !== 11) {
+                showError('CPF deve conter 11 dígitos');
+                return;
+            }
+
+            // Mostrar loading
+            showLoading(true);
+            hideResult();
+
+            try {
+                // Fazer requisição para a API
+                const response = await fetch(`/api/consulta?cpf=${cpf}`);
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    showSuccess(data);
+                } else {
+                    showError(data.erro || 'Erro desconhecido');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showError('Erro de conexão com a API');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        function showLoading(show) {
+            if (show) {
+                loading.classList.add('show');
+                btnText.textContent = 'Consultando...';
+                submitBtn.disabled = true;
+            } else {
+                loading.classList.remove('show');
+                btnText.textContent = 'Consultar';
+                submitBtn.disabled = false;
+            }
+        }
+
+        function showSuccess(data) {
+            const dados = data.dados;
+            
+            // Se a API externa retornar erro
+            if (dados.error || dados.erro) {
+                showError(dados.error || dados.erro || 'Erro retornado pela API');
+                return;
+            }
+
+            // Adaptar para diferentes estruturas de resposta
+            const nome = dados.nome || dados.name || dados.full_name || 'Não informado';
+            const situacao = dados.situacao || dados.status || dados.situation || 'N/A';
+            const nascimento = dados.nascimento || dados.birth_date || dados.data_nascimento || 'N/A';
+            const score = dados.score || dados.credit_score || 0;
+            const scorePercent = (score / 1000) * 100;
+
+            // Endereço
+            const endereco = dados.endereco || dados.address || {};
+            const logradouro = endereco.logradouro || endereco.street || 'N/A';
+            const bairro = endereco.bairro || endereco.neighborhood || 'N/A';
+            const cidade = endereco.cidade || endereco.city || 'N/A';
+            const uf = endereco.uf || endereco.state || 'N/A';
+            const cep = endereco.cep || endereco.zipcode || 'N/A';
+
+            // Contatos
+            const telefones = dados.telefones || dados.phones || dados.telefone || [];
+            const emails = dados.emails || dados.email || [];
+            const telefone = Array.isArray(telefones) ? telefones[0] : telefones || 'N/A';
+            const email = Array.isArray(emails) ? emails[0] : emails || 'N/A';
+
+            // Restrições
+            const restricoes = dados.restricoes || dados.restrictions || false;
+            const detalhesRestricoes = dados.detalhes_restricoes || dados.restriction_details || [];
+
+            result.className = 'result success';
+            result.innerHTML = `
+                <h3><i class="fas fa-check-circle"></i> Consulta realizada com sucesso!</h3>
+                
+                <div class="data-grid">
+                    <div class="data-item">
+                        <h4>Nome</h4>
+                        <p>${nome}</p>
+                    </div>
+                    
+                    <div class="data-item">
+                        <h4>Situação</h4>
+                        <p>
+                            <span class="status-badge ${situacao.toUpperCase() === 'REGULAR' ? 'status-regular' : 'status-irregular'}">
+                                ${situacao}
+                            </span>
+                        </p>
+                    </div>
+                    
+                    ${nascimento !== 'N/A' ? `
+                    <div class="data-item">
+                        <h4>Data de Nascimento</h4>
+                        <p>${formatDate(nascimento)}</p>
+                    </div>
+                    ` : ''}
+                    
+                    ${logradouro !== 'N/A' ? `
+                    <div class="data-item">
+                        <h4>Endereço</h4>
+                        <p>${logradouro}${bairro !== 'N/A' ? '<br>' + bairro : ''}${cidade !== 'N/A' ? ', ' + cidade : ''}${uf !== 'N/A' ? '/' + uf : ''}${cep !== 'N/A' ? '<br>CEP: ' + cep : ''}</p>
+                    </div>
+                    ` : ''}
+                    
+                    ${telefone !== 'N/A' ? `
+                    <div class="data-item">
+                        <h4>Telefone</h4>
+                        <p>${telefone}</p>
+                    </div>
+                    ` : ''}
+                    
+                    ${email !== 'N/A' ? `
+                    <div class="data-item">
+                        <h4>Email</h4>
+                        <p>${email}</p>
+                    </div>
+                    ` : ''}
+                    
+                    ${score > 0 ? `
+                    <div class="data-item">
+                        <h4>Score de Crédito</h4>
+                        <p>${score} pontos</p>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width: ${scorePercent}%"></div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="data-item">
+                        <h4>Restrições</h4>
+                        <p>${restricoes ? 
+                            `<span class="status-badge status-irregular">
+                                ${Array.isArray(detalhesRestricoes) && detalhesRestricoes.length > 0 ? detalhesRestricoes.join(', ') : 'Sim'}
+                            </span>` : 
+                            '<span class="status-badge status-regular">Nenhuma</span>'
+                        }</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; opacity: 0.8; font-size: 0.9rem;">
+                    <i class="fas fa-clock"></i> Consultado em: ${formatDateTime(data.timestamp)}
+                    <br><i class="fas fa-server"></i> Fonte: ${data.fonte || 'API Externa'}
+                </div>
+                
+                <div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.2); border-radius: 8px; font-size: 0.85rem;">
+                    <strong>Dados brutos:</strong>
+                    <pre style="margin-top: 8px; white-space: pre-wrap; word-break: break-word;">${JSON.stringify(dados, null, 2)}</pre>
+                </div>
+            `;
+            result.style.display = 'block';
+        }
+
+        function showError(message) {
+            result.className = 'result error';
+            result.innerHTML = `
+                <h3><i class="fas fa-exclamation-circle"></i> Erro na consulta</h3>
+                <p style="margin-top: 10px; font-size: 1.1rem;">${message}</p>
+            `;
+            result.style.display = 'block';
+        }
+
+        function hideResult() {
+            result.style.display = 'none';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString || dateString === 'N/A') return 'N/A';
+            
+            // Tenta diferentes formatos de data
+            let date;
+            if (dateString.includes('-')) {
+                date = new Date(dateString + (dateString.length === 10 ? 'T00:00:00' : ''));
+            } else if (dateString.includes('/')) {
+                const parts = dateString.split('/');
+                if (parts.length === 3) {
+                    // Assume dd/mm/yyyy
+                    date = new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+            } else {
+                date = new Date(dateString);
+            }
+            
+            if (isNaN(date.getTime())) return dateString; // Retorna string original se não conseguir parsear
+            
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('pt-BR');
+        }
+
+        // Inicializar endpoint
+        updateApiEndpoint();
+    </script>
+</body>
+</html>
