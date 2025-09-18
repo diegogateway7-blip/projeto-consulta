@@ -1,4 +1,4 @@
-// api/consulta.js - API para Vercel
+// api/consulta.js - API para Vercel (MODO DE TESTE)
 export default async function handler(req, res) {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,107 +11,31 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Só aceitar GET requests
-  if (req.method !== 'GET') {
-    return res.status(405).json({
-      erro: 'Método não permitido',
-      codigo: 'METHOD_NOT_ALLOWED'
-    });
+  // Apenas para garantir que um CPF foi enviado
+  const { cpf } = req.query;
+  if (!cpf) {
+    return res.status(400).json({ erro: 'CPF é obrigatório' });
   }
 
-  try {
-    const { cpf } = req.query;
+  // Dados de teste (mock) para verificar a conexão frontend-backend
+  const mockData = {
+      nome: "CONEXÃO BEM-SUCEDIDA",
+      situacao: "REGULAR",
+      nascimento: "01/01/2000",
+      score: 750,
+      endereco: { logradouro: 'Rua de Teste, 123' },
+      telefones: ['(11) 98765-4321'],
+      emails: ['teste@conexao.com'],
+      restricoes: false
+  };
 
-    // Token fixo para uso pessoal
-    const CLIENT_INFO = { name: 'Uso Pessoal', active: true };
-
-    // Validar CPF
-    if (!cpf) {
-      return res.status(400).json({
-        erro: 'CPF é obrigatório',
-        codigo: 'CPF_MISSING'
-      });
-    }
-
-    if (!validarCPF(cpf)) {
-      return res.status(400).json({
-        erro: 'CPF inválido',
-        codigo: 'CPF_INVALID'
-      });
-    }
-
-    // Consultar dados na API externa
-    const dados = await consultarDados(cpf);
-
-    // Resposta de sucesso
-    res.status(200).json({
-      sucesso: true,
-      cpf: cpf,
-      timestamp: new Date().toISOString(),
-      dados: dados,
-      cliente: CLIENT_INFO.name,
-      fonte: 'searchapi.dnnl.live'
-    });
-
-  } catch (error) {
-    console.error('Erro na consulta:', error);
-    res.status(500).json({
-      erro: 'Erro interno do servidor',
-      codigo: 'INTERNAL_ERROR'
-    });
-  }
-}
-
-// Função para validar CPF
-function validarCPF(cpf) {
-  cpf = cpf.replace(/[^\d]/g, '');
-  
-  if (cpf.length !== 11) return false;
-  if (/^(\d)\1{10}$/.test(cpf)) return false;
-
-  let soma = 0;
-  for (let i = 0; i < 9; i++) {
-    soma += parseInt(cpf.charAt(i)) * (10 - i);
-  }
-  let resto = 11 - (soma % 11);
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.charAt(9))) return false;
-
-  soma = 0;
-  for (let i = 0; i < 10; i++) {
-    soma += parseInt(cpf.charAt(i)) * (11 - i);
-  }
-  resto = 11 - (soma % 11);
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.charAt(10))) return false;
-
-  return true;
-}
-
-// Função para consultar dados na API externa
-async function consultarDados(cpf) {
-  try {
-    const apiUrl = `https://searchapi.dnnl.live/consulta?cpf=${cpf}&token_api=1528`;
-    
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json, text/plain, */*',
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    
-    // Retornar os dados recebidos da API externa
-    return data;
-    
-  } catch (error) {
-    console.error('Erro ao consultar API externa:', error);
-    throw error;
-  }
+  // Resposta de sucesso com os dados de teste
+  res.status(200).json({
+    sucesso: true,
+    cpf: cpf,
+    timestamp: new Date().toISOString(),
+    dados: mockData,
+    cliente: "Teste de Sistema",
+    fonte: "Mock Interno"
+  });
 }
